@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-preload-count"
+description = "Enables the get_preload_count command without any pre-configured scope."
+commands.allow = ["get_preload_count"]
+
+[[permission]]
+identifier = "deny-get-preload-count"
+description = "Denies the get_preload_count command without any pre-configured scope."
+commands.deny = ["get_preload_count"]

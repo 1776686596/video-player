@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-clear-preload-queue"
+description = "Enables the clear_preload_queue command without any pre-configured scope."
+commands.allow = ["clear_preload_queue"]
+
+[[permission]]
+identifier = "deny-clear-preload-queue"
+description = "Denies the clear_preload_queue command without any pre-configured scope."
+commands.deny = ["clear_preload_queue"]

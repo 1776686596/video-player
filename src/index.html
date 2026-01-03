@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我看美女是为了每天的身心愉悦</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 设置按钮 -->
+    <button id="settingsBtn" class="settings-btn" title="设置">⚙</button>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" data-panel="video" id="videoTab">我看美女是为了每天的身心愉悦</button>
+      <button class="tab-btn" data-panel="image" id="imageTab">美图</button>
+    </div>
+
+    <div class="panel active" id="videoPanel" data-panel="video">
+      <div class="video-wrapper" id="videoWrapper">
+        <video id="video" playsinline></video>
+        <div id="loading" class="loading hidden">
+          <div class="spinner"></div>
+        </div>
+        <!-- 自定义控制栏 -->
+        <div class="video-controls" id="videoControls">
+          <button id="playPauseBtn" class="ctrl-btn">▶</button>
+          <input type="range" id="progressBar" class="progress-bar" value="0" min="0" max="100">
+          <span id="timeDisplay" class="time-display">0:00 / 0:00</span>
+          <input type="range" id="volumeBar" class="volume-bar" value="100" min="0" max="100">
+          <select id="speedSelect" class="speed-select">
+            <option value="0.5">0.5x</option>
+            <option value="0.75">0.75x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+          </select>
+          <button id="fsBtn" class="ctrl-btn" title="全屏">⛶</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="nextBtn" class="btn btn-primary">下一个</button>
+        <label class="toggle">
+          <input type="checkbox" id="autoPlay" checked>
+          <span class="toggle-slider"></span>
+          <span class="toggle-label">自动播放</span>
+        </label>
+      </div>
+
+      <div id="status" class="status"></div>
+    </div>
+
+    <div class="panel" id="imagePanel" data-panel="image">
+      <div class="image-wrapper" id="imageWrapper">
+        <img id="image" alt="美图">
+        <div id="imageLoading" class="loading hidden">
+          <div class="spinner"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="nextImageBtn" class="btn btn-primary">下一张</button>
+      </div>
+
+      <div id="imageStatus" class="status"></div>
+    </div>
+  </div>
+
+  <!-- 设置弹窗 -->
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="settingsTitle">缓存管理</h3>
+        <button id="closeSettings" class="close-btn">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-tabs">
+          <button class="settings-tab active" data-mode="video">视频接口</button>
+          <button class="settings-tab" data-mode="image">美图接口</button>
+        </div>
+        <div class="category-list" id="categoryList"></div>
+        <div class="add-api">
+          <h4>添加自定义接口</h4>
+          <div class="add-api-row">
+            <select id="categorySelect" class="input category-select">
+              <option value="">选择分类...</option>
+            </select>
+            <input type="text" id="newCategoryName" placeholder="新分类名称" class="input new-category-input hidden">
+          </div>
+          <input type="text" id="newApiName" placeholder="接口名称" class="input">
+          <input type="text" id="newApiUrl" placeholder="接口URL" class="input">
+          <button id="addApiBtn" class="btn btn-primary">添加</button>
+        </div>
+        <div class="cache-actions">
+          <h4>缓存管理</h4>
+          <button id="clearCacheBtn" class="btn">清理视频缓存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

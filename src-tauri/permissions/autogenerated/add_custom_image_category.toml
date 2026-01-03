@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-add-custom-image-category"
+description = "Enables the add_custom_image_category command without any pre-configured scope."
+commands.allow = ["add_custom_image_category"]
+
+[[permission]]
+identifier = "deny-add-custom-image-category"
+description = "Denies the add_custom_image_category command without any pre-configured scope."
+commands.deny = ["add_custom_image_category"]

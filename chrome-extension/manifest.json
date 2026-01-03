@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "美女视频悬浮窗",
+  "version": "1.0.0",
+  "description": "悬浮窗播放美女视频",
+  "permissions": ["storage", "scripting", "activeTab"],
+  "host_permissions": [
+    "https://api.tzjsy.cn/*",
+    "http://api.nonebot.top/*",
+    "http://api.huaiyan.top/*",
+    "https://*/*",
+    "http://*/*"
+  ],
+  "action": {
+    "default_icon": "icon.png",
+    "default_title": "美女视频"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content.js"],
+    "css": ["style.css"]
+  }],
+  "icons": {
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}

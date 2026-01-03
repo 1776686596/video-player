@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-pop-next-video"
+description = "Enables the pop_next_video command without any pre-configured scope."
+commands.allow = ["pop_next_video"]
+
+[[permission]]
+identifier = "deny-pop-next-video"
+description = "Denies the pop_next_video command without any pre-configured scope."
+commands.deny = ["pop_next_video"]

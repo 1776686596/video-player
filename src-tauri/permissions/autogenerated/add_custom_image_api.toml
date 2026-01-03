@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-add-custom-image-api"
+description = "Enables the add_custom_image_api command without any pre-configured scope."
+commands.allow = ["add_custom_image_api"]
+
+[[permission]]
+identifier = "deny-add-custom-image-api"
+description = "Denies the add_custom_image_api command without any pre-configured scope."
+commands.deny = ["add_custom_image_api"]

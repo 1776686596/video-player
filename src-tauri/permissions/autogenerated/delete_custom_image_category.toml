@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-delete-custom-image-category"
+description = "Enables the delete_custom_image_category command without any pre-configured scope."
+commands.allow = ["delete_custom_image_category"]
+
+[[permission]]
+identifier = "deny-delete-custom-image-category"
+description = "Denies the delete_custom_image_category command without any pre-configured scope."
+commands.deny = ["delete_custom_image_category"]

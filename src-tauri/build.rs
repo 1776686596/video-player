@@ -1,0 +1,30 @@
+fn main() {
+    tauri_build::try_build(
+        tauri_build::Attributes::new()
+            .app_manifest(tauri_build::AppManifest::new().commands(&[
+                "fetch_video",
+                "fetch_image",
+                "download_video",
+                "download_image",
+                "preload_next",
+                "get_preload_count",
+                "pop_next_video",
+                "clear_preload_queue",
+                "get_categories",
+                "get_current_category",
+                "set_current_category",
+                "add_custom_category",
+                "add_custom_api",
+                "delete_custom_api",
+                "delete_custom_category",
+                "get_image_categories",
+                "get_current_image_category",
+                "set_current_image_category",
+                "add_custom_image_category",
+                "add_custom_image_api",
+                "delete_custom_image_api",
+                "delete_custom_image_category"
+            ])),
+    )
+    .unwrap();
+}
