@@ -3,8 +3,149 @@ let isDragging = false;
 let dragOffset = { x: 0, y: 0 };
 let autoNext = true;
 
-function createFloatWindow() {
-  if (floatWindow) return;
+function getFloatWindowElement() {
+  return floatWindow || document.getElementById("video-float-window");
+}
+
+function exportFloatWindowState() {
+  var existing = getFloatWindowElement();
+  if (!existing) return null;
+
+  var video = existing.querySelector(".vfw-video");
+  var state = {
+    autoNext: autoNext,
+    minimized: existing.classList.contains("vfw-minimized"),
+    position: {
+      left: existing.style.left || null,
+      top: existing.style.top || null,
+      right: existing.style.right || null,
+      bottom: existing.style.bottom || null
+    },
+    video: null
+  };
+
+  if (video) {
+    state.video = {
+      src: video.currentSrc || video.src || null,
+      currentTime: Number.isFinite(video.currentTime) ? video.currentTime : 0,
+      paused: !!video.paused,
+      muted: !!video.muted,
+      volume: Number.isFinite(video.volume) ? video.volume : 1,
+      playbackRate: Number.isFinite(video.playbackRate) ? video.playbackRate : 1
+    };
+  }
+
+  return state;
+}
+
+function applyFloatWindowState(existing, state) {
+  if (!existing || !state) return;
+
+  if (typeof state.autoNext === "boolean") {
+    autoNext = state.autoNext;
+    var checkbox = existing.querySelector(".vfw-auto input");
+    if (checkbox) checkbox.checked = autoNext;
+  }
+
+  if (state.minimized) {
+    existing.classList.add("vfw-minimized");
+  } else if (state.minimized === false) {
+    existing.classList.remove("vfw-minimized");
+  }
+
+  if (state.position) {
+    if (state.position.left !== null) existing.style.left = state.position.left;
+    if (state.position.top !== null) existing.style.top = state.position.top;
+    if (state.position.right !== null) existing.style.right = state.position.right;
+    if (state.position.bottom !== null) existing.style.bottom = state.position.bottom;
+  }
+
+  if (state.video && state.video.src) {
+    var video = existing.querySelector(".vfw-video");
+    var loading = existing.querySelector(".vfw-loading");
+    if (!video) return;
+
+    if (loading) {
+      loading.textContent = "加载中...";
+      loading.style.display = "flex";
+      loading.style.cursor = "default";
+      loading.onclick = null;
+    }
+
+    var targetTime = Number.isFinite(state.video.currentTime) ? state.video.currentTime : 0;
+    var shouldPlay = !state.video.paused;
+
+    video.autoplay = false;
+    if (typeof state.video.muted === "boolean") video.muted = state.video.muted;
+    if (Number.isFinite(state.video.volume)) video.volume = state.video.volume;
+    if (Number.isFinite(state.video.playbackRate)) video.playbackRate = state.video.playbackRate;
+
+    function restorePlayback() {
+      try {
+        if (targetTime > 0) video.currentTime = targetTime;
+      } catch (e) {
+        // ignore
+      }
+      if (shouldPlay) {
+        video.play().catch(function(e) { console.log("Play error:", e); });
+      } else {
+        try { video.pause(); } catch (e) { /* ignore */ }
+      }
+    }
+
+    video.src = state.video.src;
+    video.load();
+    if (shouldPlay) {
+      video.play().catch(function(e) { console.log("Play error:", e); });
+    }
+
+    if (video.readyState >= 1) {
+      restorePlayback();
+    } else {
+      var onMeta = function() {
+        video.removeEventListener("loadedmetadata", onMeta);
+        restorePlayback();
+      };
+      video.addEventListener("loadedmetadata", onMeta);
+    }
+  }
+}
+
+function closeFloatWindow() {
+  stopDrag();
+
+  var existing = getFloatWindowElement();
+  if (!existing) {
+    floatWindow = null;
+    return;
+  }
+
+  var video = existing.querySelector(".vfw-video");
+  if (video) {
+    try {
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  existing.remove();
+  floatWindow = null;
+}
+
+function createFloatWindow(initialState) {
+  var existing = getFloatWindowElement();
+  if (existing) {
+    floatWindow = existing;
+    if (initialState) applyFloatWindowState(existing, initialState);
+    return;
+  }
+
+  if (initialState && typeof initialState.autoNext === "boolean") {
+    autoNext = initialState.autoNext;
+  }
 
   floatWindow = document.createElement("div");
   floatWindow.id = "video-float-window";
@@ -39,7 +180,7 @@ function createFloatWindow() {
   autoCheckbox.addEventListener("change", function() { autoNext = this.checked; });
 
   header.addEventListener("mousedown", startDrag);
-  closeBtn.addEventListener("click", function() { floatWindow.remove(); floatWindow = null; });
+  closeBtn.addEventListener("click", closeFloatWindow);
   minBtn.addEventListener("click", function() { floatWindow.classList.toggle("vfw-minimized"); });
   nextBtn.addEventListener("click", loadVideo);
   video.addEventListener("ended", function() { if (autoNext) loadVideo(); });
@@ -51,7 +192,9 @@ function createFloatWindow() {
     loading.onclick = loadVideo;
   });
 
-  loadVideo();
+  var hasVideoSrc = !!(initialState && initialState.video && initialState.video.src);
+  if (initialState) applyFloatWindowState(floatWindow, initialState);
+  if (!hasVideoSrc) loadVideo();
 }
 
 function startDrag(e) {
@@ -65,6 +208,10 @@ function startDrag(e) {
 
 function onDrag(e) {
   if (!isDragging) return;
+  if (!floatWindow) {
+    stopDrag();
+    return;
+  }
   floatWindow.style.left = (e.clientX - dragOffset.x) + "px";
   floatWindow.style.top = (e.clientY - dragOffset.y) + "px";
   floatWindow.style.right = "auto";
@@ -78,9 +225,10 @@ function stopDrag() {
 }
 
 function loadVideo() {
-  if (!floatWindow) return;
-  var video = floatWindow.querySelector(".vfw-video");
-  var loading = floatWindow.querySelector(".vfw-loading");
+  var existing = getFloatWindowElement();
+  if (!existing) return;
+  var video = existing.querySelector(".vfw-video");
+  var loading = existing.querySelector(".vfw-loading");
   loading.textContent = "加载中...";
   loading.style.display = "flex";
   loading.style.cursor = "default";
@@ -104,13 +252,38 @@ function loadVideo() {
   });
 }
 
-chrome.runtime.onMessage.addListener(function(request) {
-  if (request.action === "toggle") {
-    if (floatWindow) {
-      floatWindow.remove();
-      floatWindow = null;
-    } else {
-      createFloatWindow();
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  if (request.action === "status") {
+    sendResponse({ open: !!getFloatWindowElement() });
+    return;
+  }
+  if (request.action === "exportState") {
+    var state = exportFloatWindowState();
+    if (!state) {
+      sendResponse({ open: false });
+      return;
     }
+    sendResponse({ open: true, state: state });
+    return;
+  }
+  if (request.action === "toggle") {
+    if (getFloatWindowElement()) {
+      closeFloatWindow();
+      sendResponse({ open: false });
+    } else {
+      createFloatWindow(null);
+      sendResponse({ open: true });
+    }
+    return;
+  }
+  if (request.action === "open") {
+    var stateToApply = request.state || null;
+    createFloatWindow(stateToApply);
+    sendResponse({ open: true });
+    return;
+  }
+  if (request.action === "close") {
+    closeFloatWindow();
+    sendResponse({ open: false });
   }
 });

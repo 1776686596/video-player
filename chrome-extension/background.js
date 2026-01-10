@@ -7,19 +7,137 @@ const API_ENDPOINTS = [
   "https://api.tzjsy.cn/sp/cy/video.php"
 ];
 
+const ACTIVE_FLOAT_TAB_ID_KEY = "activeFloatTabId";
+
+function getStorageArea() {
+  return chrome.storage.session || chrome.storage.local;
+}
+
+function storageGet(key) {
+  return new Promise(function(resolve) {
+    getStorageArea().get(key, function(result) {
+      resolve(result || {});
+    });
+  });
+}
+
+function storageSet(value) {
+  return new Promise(function(resolve) {
+    getStorageArea().set(value, function() {
+      resolve();
+    });
+  });
+}
+
+function storageRemove(key) {
+  return new Promise(function(resolve) {
+    getStorageArea().remove(key, function() {
+      resolve();
+    });
+  });
+}
+
+async function getActiveFloatTabId() {
+  try {
+    const result = await storageGet(ACTIVE_FLOAT_TAB_ID_KEY);
+    const tabId = result[ACTIVE_FLOAT_TAB_ID_KEY];
+    return typeof tabId === "number" ? tabId : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function setActiveFloatTabId(tabId) {
+  try {
+    await storageSet({ [ACTIVE_FLOAT_TAB_ID_KEY]: tabId });
+  } catch (e) {
+    // ignore
+  }
+}
+
+async function clearActiveFloatTabId() {
+  try {
+    await storageRemove(ACTIVE_FLOAT_TAB_ID_KEY);
+  } catch (e) {
+    // ignore
+  }
+}
+
+function sendMessageToTab(tabId, message) {
+  return new Promise(function(resolve) {
+    chrome.tabs.sendMessage(tabId, message, function(response) {
+      if (chrome.runtime.lastError) {
+        resolve(null);
+        return;
+      }
+      resolve(response || null);
+    });
+  });
+}
+
+function isBlockedUrl(url) {
+  return (
+    !url ||
+    url.startsWith("chrome://") ||
+    url.startsWith("edge://") ||
+    url.startsWith("about:") ||
+    url.startsWith("chrome-extension://")
+  );
+}
+
 chrome.action.onClicked.addListener(async function(tab) {
-  if (!tab.url || tab.url.startsWith("chrome://") || tab.url.startsWith("edge://") || tab.url.startsWith("about:") || tab.url.startsWith("chrome-extension://")) {
+  if (typeof tab?.id !== "number" || isBlockedUrl(tab.url)) {
     return;
   }
+  const currentTabId = tab.id;
+
+  const activeTabId = await getActiveFloatTabId();
+  if (activeTabId && activeTabId !== currentTabId) {
+    // If a float window is already open in another tab, move it to the current tab
+    // (keep same video/progress) instead of refreshing a new one.
+    const stateResponse = await sendMessageToTab(activeTabId, { action: "exportState" });
+    if (stateResponse && stateResponse.open) {
+      try {
+        await chrome.scripting.insertCSS({ target: { tabId: currentTabId }, files: ["style.css"] });
+        await chrome.scripting.executeScript({ target: { tabId: currentTabId }, files: ["content.js"] });
+      } catch (e) {
+        console.log("Inject error:", e);
+      }
+
+      const openResponse = await sendMessageToTab(currentTabId, { action: "open", state: stateResponse.state || null });
+      if (openResponse && openResponse.open) {
+        await sendMessageToTab(activeTabId, { action: "close" });
+        await setActiveFloatTabId(currentTabId);
+      }
+      return;
+    }
+    await clearActiveFloatTabId();
+  }
   try {
-    await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ["style.css"] });
-    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+    await chrome.scripting.insertCSS({ target: { tabId: currentTabId }, files: ["style.css"] });
+    await chrome.scripting.executeScript({ target: { tabId: currentTabId }, files: ["content.js"] });
   } catch (e) {
     console.log("Inject error:", e);
   }
-  setTimeout(function() {
-    chrome.tabs.sendMessage(tab.id, { action: "toggle" });
-  }, 100);
+
+  const response = await sendMessageToTab(currentTabId, { action: "toggle" });
+  if (response && typeof response.open === "boolean") {
+    if (response.open) {
+      await setActiveFloatTabId(currentTabId);
+    } else {
+      const latestActiveTabId = await getActiveFloatTabId();
+      if (latestActiveTabId === currentTabId) {
+        await clearActiveFloatTabId();
+      }
+    }
+  }
+});
+
+chrome.tabs.onRemoved.addListener(async function(tabId) {
+  const activeTabId = await getActiveFloatTabId();
+  if (activeTabId === tabId) {
+    await clearActiveFloatTabId();
+  }
 });
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
